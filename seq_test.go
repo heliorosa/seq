@@ -172,3 +172,47 @@ func TestContainsValue(t *testing.T) {
 	require.True(t, seq.ContainsValue(mSeq, "one"))
 	require.False(t, seq.ContainsValue(mSeq, "zero"))
 }
+
+func TestFind(t *testing.T) {
+	v, ok := seq.Find(sSeq, func(v int) bool { return v == 42 })
+	require.True(t, ok)
+	require.Equal(t, 42, v)
+	_, ok = seq.Find(sSeq, func(v int) bool { return false })
+	require.False(t, ok)
+}
+
+func TestFind2(t *testing.T) {
+	k, v, ok := seq.Find2(mSeq, func(k int, v string) bool { return k == 1 && v == "one" })
+	require.True(t, ok)
+	require.Equal(t, 1, k)
+	require.Equal(t, "one", v)
+	_, _, ok = seq.Find2(mSeq, func(_ int, _ string) bool { return false })
+	require.False(t, ok)
+}
+
+func TestConcat(t *testing.T) {
+	require.Equal(
+		t,
+		append(append(make([]int, 0, len(S)*2), S...), S...),
+		slices.Collect(seq.Concat(sSeq, sSeq)),
+	)
+}
+
+func TestConcat2(t *testing.T) {
+	e := maps.Clone(M)
+	mapZero := map[int]string{0: "zero"}
+	maps.Copy(e, mapZero)
+	require.Equal(
+		t,
+		e,
+		maps.Collect(seq.Concat2(mSeq, maps.All(mapZero))),
+	)
+}
+
+func TestDedup(t *testing.T) {
+	require.Equal(t, S, slices.Collect(seq.Dedup(seq.Concat(sSeq, sSeq))))
+}
+
+func TestGenerate(t *testing.T) {
+	require.Equal(t, []int{0, 2, 4, 6}, slices.Collect(seq.Generate(0, 8, 2)))
+}

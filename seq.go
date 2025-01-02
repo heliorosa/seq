@@ -3,6 +3,7 @@ package seq
 import (
 	"cmp"
 	"iter"
+	"slices"
 )
 
 func Filter[T any](seq iter.Seq[T], filterFunc func(v T) bool) iter.Seq[T] {
@@ -236,9 +237,9 @@ func Limit2[K, V any](seq iter.Seq2[K, V], n int) iter.Seq2[K, V] {
 
 func Find[T any](seq iter.Seq[T], f func(T) bool) (r T, ok bool) {
 	var z T
-	for i := range seq {
-		if f(i) {
-			return i, true
+	for v := range seq {
+		if f(v) {
+			return v, true
 		}
 	}
 	return z, false
@@ -270,4 +271,80 @@ func ContainsKey[K comparable, V any](seq iter.Seq2[K, V], key K) bool {
 func ContainsValue[K any, V comparable](seq iter.Seq2[K, V], val V) bool {
 	_, _, ok := Find2(seq, func(_ K, v V) bool { return v == val })
 	return ok
+}
+
+func Flatten[T any](seq iter.Seq[iter.Seq[T]]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for s := range seq {
+			for v := range s {
+				if !yield(v) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func Flatten2[K, V any](seq iter.Seq[iter.Seq2[K, V]]) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for s := range seq {
+			for k, v := range s {
+				if !yield(k, v) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func Concat[T any](seqs ...iter.Seq[T]) iter.Seq[T] {
+	return Flatten(slices.Values(seqs))
+}
+
+func Concat2[K, V any](seqs ...iter.Seq2[K, V]) iter.Seq2[K, V] {
+	return Flatten2(slices.Values(seqs))
+}
+
+func Drain[T any](seq iter.Seq[T]) {
+	for range seq {
+	}
+}
+
+func Drain2[K, V any](seq iter.Seq2[K, V]) {
+	for range seq {
+	}
+}
+
+func Dedup[T comparable](seq iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		seen := make(map[T]struct{}, 16)
+		for v := range seq {
+			if _, ok := seen[v]; !ok {
+				if !yield(v) {
+					return
+				}
+				seen[v] = struct{}{}
+			}
+		}
+	}
+}
+
+func GenerateFunc[T any](start T, nextFunc func(last T) T, continueFunc func(v T) bool) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		cur := start
+		for continueFunc(cur) {
+			if !yield(cur) {
+				return
+			}
+			cur = nextFunc(cur)
+		}
+	}
+}
+
+func Generate(start int, stop int, step int) iter.Seq[int] {
+	return GenerateFunc(
+		start,
+		func(last int) int { return last + step },
+		func(v int) bool { return v < stop },
+	)
 }

@@ -348,3 +348,59 @@ func Generate(start int, stop int, step int) iter.Seq[int] {
 		func(v int) bool { return v < stop },
 	)
 }
+
+func Repeat[T any](seq iter.Seq[T]) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		for {
+			for v := range seq {
+				if !yield(v) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func Repeat2[K, V any](seq iter.Seq2[K, V]) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for {
+			for k, v := range seq {
+				if !yield(k, v) {
+					return
+				}
+			}
+		}
+	}
+}
+
+func CountFunc[T any](seq iter.Seq[T], countFunc func(v T) bool) int {
+	r := 0
+	for v := range seq {
+		if countFunc(v) {
+			r++
+		}
+	}
+	return r
+}
+
+func Count[T comparable](seq iter.Seq[T], value T) int {
+	return CountFunc(seq, func(v T) bool { return value == v })
+}
+
+func CountFunc2[K, V any](seq iter.Seq2[K, V], countFunc func(k K, v V) bool) int {
+	r := 0
+	for k, v := range seq {
+		if countFunc(k, v) {
+			r++
+		}
+	}
+	return r
+}
+
+func Len[T any](seq iter.Seq[T]) int {
+	return CountFunc(seq, func(_ T) bool { return true })
+}
+
+func Len2[K, V any](seq iter.Seq2[K, V]) int {
+	return CountFunc2(seq, func(_ K, _ V) bool { return true })
+}

@@ -209,10 +209,59 @@ func TestConcat2(t *testing.T) {
 	)
 }
 
+func TestDrain(t *testing.T) {
+	drained := false
+	var tSeq = func(yield func(int) bool) {
+		defer func() { drained = true }()
+		for v := range sSeq {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+	seq.Drain(tSeq)
+	require.True(t, drained)
+}
+
+func TestDrain2(t *testing.T) {
+	drained := false
+	var tSeq = func(yield func(int, string) bool) {
+		defer func() { drained = true }()
+		for k, v := range mSeq {
+			if !yield(k, v) {
+				return
+			}
+		}
+	}
+	seq.Drain2(tSeq)
+	require.True(t, drained)
+}
+
 func TestDedup(t *testing.T) {
 	require.Equal(t, S, slices.Collect(seq.Dedup(seq.Concat(sSeq, sSeq))))
 }
 
 func TestGenerate(t *testing.T) {
 	require.Equal(t, []int{0, 2, 4, 6}, slices.Collect(seq.Generate(0, 8, 2)))
+}
+
+func TestCount(t *testing.T) {
+	r := seq.Count(seq.Limit(seq.Repeat(slices.Values([]int{42})), 4), 42)
+	require.Equal(t, 4, r)
+}
+
+func TestCountFunc2(t *testing.T) {
+	r := seq.CountFunc2(
+		seq.Limit2(seq.Repeat2(maps.All(map[int]int{1: 1, 0: 42, 99: 123})), 12),
+		func(k int, v int) bool { return k == v },
+	)
+	require.Equal(t, 4, r)
+}
+
+func TestLen(t *testing.T) {
+	require.Equal(t, 4, seq.Len(sSeq))
+}
+
+func TestLen2(t *testing.T) {
+	require.Equal(t, 3, seq.Len2(mSeq))
 }

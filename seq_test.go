@@ -157,3 +157,18 @@ func TestLimit(t *testing.T) {
 func TestLimit2(t *testing.T) {
 	require.Equal(t, 2, iterLen2(seq.Limit2(mSeq, 2)))
 }
+
+func TestContains(t *testing.T) {
+	require.True(t, seq.Contains(sSeq, 42))
+	require.False(t, seq.Contains(sSeq, 43))
+}
+
+func TestContainsKey(t *testing.T) {
+	require.True(t, seq.ContainsKey(mSeq, 1))
+	require.False(t, seq.ContainsKey(mSeq, 0))
+}
+
+func TestContainsValue(t *testing.T) {
+	require.True(t, seq.ContainsValue(mSeq, "one"))
+	require.False(t, seq.ContainsValue(mSeq, "zero"))
+}

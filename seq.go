@@ -233,3 +233,41 @@ func Limit2[K, V any](seq iter.Seq2[K, V], n int) iter.Seq2[K, V] {
 		}
 	}
 }
+
+func Find[T any](seq iter.Seq[T], f func(T) bool) (r T, ok bool) {
+	var z T
+	for i := range seq {
+		if f(i) {
+			return i, true
+		}
+	}
+	return z, false
+}
+
+func Find2[K, V any](seq iter.Seq2[K, V], f func(k K, v V) bool) (k K, v V, ok bool) {
+	var (
+		zk K
+		zv V
+	)
+	for k, v := range seq {
+		if f(k, v) {
+			return k, v, true
+		}
+	}
+	return zk, zv, false
+}
+
+func Contains[T comparable](seq iter.Seq[T], v T) bool {
+	_, ok := Find(seq, func(vv T) bool { return v == vv })
+	return ok
+}
+
+func ContainsKey[K comparable, V any](seq iter.Seq2[K, V], key K) bool {
+	_, _, ok := Find2(seq, func(k K, _ V) bool { return k == key })
+	return ok
+}
+
+func ContainsValue[K any, V comparable](seq iter.Seq2[K, V], val V) bool {
+	_, _, ok := Find2(seq, func(_ K, v V) bool { return v == val })
+	return ok
+}

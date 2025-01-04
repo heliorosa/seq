@@ -118,51 +118,30 @@ func Enumerate[T any](seq iter.Seq[T]) iter.Seq2[int, T] {
 }
 
 func CollectSlice[T any](seq iter.Seq[T], size int) []T {
-	r := make([]T, 0, size)
-	for v := range seq {
-		r = append(r, v)
-	}
-	return r
+	return Reduce(
+		seq,
+		make([]T, 0, size),
+		func(ac []T, v T) []T { return append(ac, v) },
+	)
 }
 
 func CollectMap[K comparable, V any](seq iter.Seq2[K, V], size int) map[K]V {
-	r := make(map[K]V, size)
-	for k, v := range seq {
-		r[k] = v
-	}
-	return r
+	return Reduce2(
+		seq,
+		make(map[K]V, size),
+		func(ac map[K]V, k K, v V) map[K]V {
+			ac[k] = v
+			return ac
+		},
+	)
 }
 
-func Min[T cmp.Ordered](seq iter.Seq[T]) (T, bool) {
-	var (
-		r  T
-		ok = false
-	)
-	for v := range seq {
-		if !ok {
-			r = v
-			ok = true
-			continue
-		}
-		if v < r {
-			r = v
-		}
-	}
-	return r, ok
+func Min[T cmp.Ordered](seq iter.Seq[T]) T {
+	return Fold(seq, func(ac, v T) T { return when(ac < v, ac, v) })
 }
 
-func Max[T cmp.Ordered](seq iter.Seq[T]) (T, bool) {
-	var (
-		r  T
-		ok = false
-	)
-	for v := range seq {
-		ok = true
-		if v > r {
-			r = v
-		}
-	}
-	return r, ok
+func Max[T cmp.Ordered](seq iter.Seq[T]) T {
+	return Fold(seq, func(ac, v T) T { return when(ac > v, ac, v) })
 }
 
 type Numeric interface {
@@ -328,7 +307,6 @@ func Dedup[T comparable](seq iter.Seq[T]) iter.Seq[T] {
 		}
 	}
 }
-
 func GenerateFunc[T any](start T, nextFunc func(last T) T, continueFunc func(v T) bool) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		cur := start
@@ -403,4 +381,59 @@ func Len[T any](seq iter.Seq[T]) int {
 
 func Len2[K, V any](seq iter.Seq2[K, V]) int {
 	return CountFunc2(seq, func(_ K, _ V) bool { return true })
+}
+
+func CompareFunc[T any](seq1 iter.Seq[T], seq2 iter.Seq[T], compareFunc func(v1 T, v2 T) bool) (equal int, total int) {
+	next, stop := iter.Pull(seq2)
+	defer stop()
+	for v1 := range seq1 {
+		v2, ok := next()
+		if !ok {
+			return 0, 0
+		}
+		total++
+		if compareFunc(v1, v2) {
+			equal++
+		}
+	}
+	return equal, total
+}
+
+func Compare[T comparable](seq1 iter.Seq[T], seq2 iter.Seq[T]) (equal int, total int) {
+	return CompareFunc(seq1, seq2, func(v1 T, v2 T) bool { return v1 == v2 })
+}
+
+func ComparePercent[T comparable](seq1 iter.Seq[T], seq2 iter.Seq[T]) float64 {
+	equal, total := Compare(seq1, seq2)
+	return float64(equal) / float64(total)
+}
+
+func Equal[T comparable](seq1 iter.Seq[T], seq2 iter.Seq[T]) bool {
+	equal, total := Compare(seq1, seq2)
+	return equal == total
+}
+
+func SortFunc[T any](seq iter.Seq[T], cmpFunc func(a T, b T) int) iter.Seq[T] {
+	return func(yield func(T) bool) {
+		s := slices.Collect(seq)
+		slices.SortFunc(s, cmpFunc)
+		for _, v := range s {
+			if !yield(v) {
+				return
+			}
+		}
+	}
+}
+
+func Sort[T cmp.Ordered](seq iter.Seq[T]) iter.Seq[T] {
+	return SortFunc(seq, func(a, b T) int {
+		return when(a < b, -1, when(a > b, 1, 0))
+	})
+}
+
+func when[T any](cond bool, vTrue T, vFalse T) T {
+	if cond {
+		return vTrue
+	}
+	return vFalse
 }

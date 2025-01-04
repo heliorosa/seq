@@ -107,14 +107,12 @@ func TestCollectMap(t *testing.T) {
 }
 
 func TestMin(t *testing.T) {
-	m, ok := seq.Min(sSeq)
-	require.True(t, ok)
+	m := seq.Min(sSeq)
 	require.Equal(t, 1, m)
 }
 
 func TestMax(t *testing.T) {
-	m, ok := seq.Max(sSeq)
-	require.True(t, ok)
+	m := seq.Max(sSeq)
 	require.Equal(t, 99, m)
 }
 
@@ -264,4 +262,22 @@ func TestLen(t *testing.T) {
 
 func TestLen2(t *testing.T) {
 	require.Equal(t, 3, seq.Len2(mSeq))
+}
+
+func TestCompare(t *testing.T) {
+	S2 := []int{S[0], S[1], S[2], S[3]}
+	s2Seq := slices.Values(S2)
+	require.True(t, seq.Equal(sSeq, s2Seq))
+	S2[0]++
+	s2Seq = slices.Values(S2)
+	equal, total := seq.Compare(sSeq, s2Seq)
+	require.Equal(t, 4, total)
+	require.Equal(t, 3, equal)
+}
+
+func TestSort(t *testing.T) {
+	s2 := slices.Clone(S)
+	slices.Reverse(s2)
+	s2 = slices.Collect(seq.Sort(slices.Values(s2)))
+	require.Equal(t, S, s2)
 }

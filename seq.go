@@ -307,6 +307,7 @@ func Dedup[T comparable](seq iter.Seq[T]) iter.Seq[T] {
 		}
 	}
 }
+
 func GenerateFunc[T any](start T, nextFunc func(last T) T, continueFunc func(v T) bool) iter.Seq[T] {
 	return func(yield func(T) bool) {
 		cur := start
@@ -427,8 +428,55 @@ func SortFunc[T any](seq iter.Seq[T], cmpFunc func(a T, b T) int) iter.Seq[T] {
 
 func Sort[T cmp.Ordered](seq iter.Seq[T]) iter.Seq[T] {
 	return SortFunc(seq, func(a, b T) int {
-		return when(a < b, -1, when(a > b, 1, 0))
+		if a < b {
+			return -1
+		}
+		return when(a > b, 1, 0)
 	})
+}
+
+func AnyFunc[T any](seq iter.Seq[T], cmpFunc func(a T) bool) bool {
+	for v := range seq {
+		if cmpFunc(v) {
+			return true
+		}
+	}
+	return false
+}
+
+func Any[T comparable](seq iter.Seq[T], value T) bool {
+	return AnyFunc(seq, func(v T) bool { return value == v })
+}
+
+func AnyFunc2[K, V any](seq iter.Seq2[K, V], cmpFunc func(k K, v V) bool) bool {
+	for k, v := range seq {
+		if cmpFunc(k, v) {
+			return true
+		}
+	}
+	return false
+}
+
+func AllFunc[T any](seq iter.Seq[T], cmpFunc func(a T) bool) bool {
+	for v := range seq {
+		if !cmpFunc(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func All[T comparable](seq iter.Seq[T], value T) bool {
+	return AnyFunc(seq, func(v T) bool { return value == v })
+}
+
+func AllFunc2[K, V any](seq iter.Seq2[K, V], cmpFunc func(k K, v V) bool) bool {
+	for k, v := range seq {
+		if !cmpFunc(k, v) {
+			return false
+		}
+	}
+	return true
 }
 
 func when[T any](cond bool, vTrue T, vFalse T) T {

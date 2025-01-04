@@ -281,3 +281,23 @@ func TestSort(t *testing.T) {
 	s2 = slices.Collect(seq.Sort(slices.Values(s2)))
 	require.Equal(t, S, s2)
 }
+
+func TestAny(t *testing.T) {
+	require.True(t, seq.Any(sSeq, S[1]))
+	require.False(t, seq.Any(sSeq, S[1]+100))
+}
+
+func TestAny2(t *testing.T) {
+	require.True(t, seq.AnyFunc2(mSeq, func(k int, v string) bool { return k == 1 }))
+	require.False(t, seq.AnyFunc2(mSeq, func(k int, v string) bool { return k == 100 }))
+}
+
+func TestAll(t *testing.T) {
+	require.True(t, seq.AllFunc(sSeq, func(v int) bool { return v < 1000 }))
+	require.False(t, seq.AllFunc(sSeq, func(v int) bool { return v < 5 }))
+}
+
+func TestAll2(t *testing.T) {
+	require.True(t, seq.AllFunc2(mSeq, func(k int, v string) bool { return k < 10 }))
+	require.False(t, seq.AllFunc2(mSeq, func(k int, v string) bool { return k < 5 }))
+}
